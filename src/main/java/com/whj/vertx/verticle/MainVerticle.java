@@ -10,6 +10,6 @@ import io.vertx.core.http.impl.HttpServerRequestImpl;
 
 public class MainVerticle extends AbstractVerticle {
     public void start() {
-        vertx.deployVerticle(JsonVerticle.class.getName());
+        vertx.deployVerticle(MysqlVerticle.class.getName());
     }
 }

@@ -10,6 +10,8 @@ import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
 
+import java.util.ArrayList;
+
 public class MysqlVerticle extends AbstractVerticle {
     Router router;
     MySQLConnectOptions connectOptions = new MySQLConnectOptions()
@@ -57,8 +59,8 @@ public class MysqlVerticle extends AbstractVerticle {
                                             .query("SELECT count(*) FROM sys_user")
                                             .execute(ar3 -> {
                                                 RowSet<Row> result = ar3.result();
-                                                JsonArray jsonArray = getResults(result, 1);
-                                                req.response().end(objects.toString() + "," + jsonArray.toString());
+                                                JsonObject count = getResults(result, 1).getJsonObject(0);
+                                                req.response().end(objects.toString() + "," + count.toString());
                                                 conn.close();
                                             });
                                 } else {
@@ -82,18 +84,17 @@ public class MysqlVerticle extends AbstractVerticle {
     }
 
     private JsonArray getResults(RowSet<Row> result, Integer fieldNUmber) {
-        RowIterator<Row> iterator = result.iterator();
         JsonArray jsonArray = new JsonArray();
-        while (iterator.hasNext()) {
+        result.forEach(item -> {
             JsonObject jsonObject = new JsonObject();
-            Row next = iterator.next();
             for (int i = 0; i < fieldNUmber; i++) {
-                String columnName = next.getColumnName(i);
-                Object value = next.getValue(columnName);
+                String columnName = item.getColumnName(i);
+                Object value = item.getValue(columnName);
                 jsonObject.put(columnName, value);
             }
             jsonArray.add(jsonObject);
-        }
+        });
+
         return jsonArray;
     }
 }

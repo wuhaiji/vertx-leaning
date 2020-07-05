@@ -39,7 +39,7 @@ public class JsonVerticle extends AbstractVerticle {
 
         //get请求 getParam
         router.get("/add").handler(req -> {
-            var num = Integer.parseInt(req.request().getParam("page"));//verticle获取参数就这一句
+            Integer num = Integer.parseInt(req.request().getParam("page"));//verticle获取参数就这一句
             req.response()
                     .end("" + (num + 2));
         });

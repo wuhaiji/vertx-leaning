@@ -1,16 +1,16 @@
 package com.whj.vertx.verticle;
 
+import com.whj.vertx.util.DBUtils;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.mysqlclient.MySQLConnection;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
 
-import java.util.ArrayList;
 
 public class MysqlVerticle extends AbstractVerticle {
     Router router;
@@ -38,6 +38,9 @@ public class MysqlVerticle extends AbstractVerticle {
 
         //get请求 getParam
         router.get("/user/get").handler(req -> {
+
+            @Nullable Integer pageSize = Integer.valueOf(req.request().getParam("pageSize"));
+            @Nullable Integer pageNo = Integer.valueOf(req.request().getParam("pageNo"));
             // Get a connection from the pool
             mysqlClient.getConnection(ar1 -> {
 
@@ -47,25 +50,31 @@ public class MysqlVerticle extends AbstractVerticle {
 
                     // Obtain our connection
                     SqlConnection conn = ar1.result();
+                    Integer size = 10;
+                    Integer begin = 0;
+                    if (pageSize > 0) {
+                        size = pageSize;
+                    }
+                    if (pageNo > 0) {
+                        begin = size * (pageNo - 1);
+                    }
 
-                    // All operations execute on the same connection
+                    System.out.println("begin:" + begin);
+                    System.out.println("size:" + size);
+                    //所有操作可以共用一个连接，在回调中嵌套查询就行
                     conn
-                            .query("SELECT user_id, username FROM sys_user")
-                            .execute(ar2 -> {
-                                RowSet<Row> result1 = ar2.result();
-                                JsonArray objects = getResults(result1, 2);
+                            .preparedQuery("SELECT user_id, username FROM sys_user limit ?,?")
+                            // `?` 是参数占位符
+                            // tuple用于传递查询参数
+                            .execute(Tuple.of(begin, size), ar2 -> {
+                                conn.close();//写在异步回调第一行，防止忘记关闭连接
                                 if (ar2.succeeded()) {
-                                    conn
-                                            .query("SELECT count(*) FROM sys_user")
-                                            .execute(ar3 -> {
-                                                RowSet<Row> result = ar3.result();
-                                                JsonObject count = getResults(result, 1).getJsonObject(0);
-                                                req.response().end(objects.toString() + "," + count.toString());
-                                                conn.close();
-                                            });
-                                } else {
-                                    // Release the connection to the pool
-                                    conn.close();
+                                    //获取参数
+                                    RowSet<Row> result1 = ar2.result();
+                                    JsonArray objects = DBUtils.getResults(result1, 2);
+                                    req.response()
+                                            .putHeader("content-type", "application/json")
+                                            .end(objects.toString());
                                 }
                             });
                 } else {
@@ -83,18 +92,5 @@ public class MysqlVerticle extends AbstractVerticle {
 
     }
 
-    private JsonArray getResults(RowSet<Row> result, Integer fieldNUmber) {
-        JsonArray jsonArray = new JsonArray();
-        result.forEach(item -> {
-            JsonObject jsonObject = new JsonObject();
-            for (int i = 0; i < fieldNUmber; i++) {
-                String columnName = item.getColumnName(i);
-                Object value = item.getValue(columnName);
-                jsonObject.put(columnName, value);
-            }
-            jsonArray.add(jsonObject);
-        });
 
-        return jsonArray;
-    }
 }

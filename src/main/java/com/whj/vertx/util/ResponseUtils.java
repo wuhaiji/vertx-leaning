@@ -9,7 +9,7 @@ import io.vertx.sqlclient.RowSet;
 
 public class ResponseUtils {
     //设置请求头
-    private static HttpServerResponse getJSONResponse(RoutingContext req) {
+    public static HttpServerResponse getJSONResponse(RoutingContext req) {
         return req.response()
                 .putHeader("content-type", "application/json");
     }

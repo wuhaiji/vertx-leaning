@@ -34,7 +34,12 @@
     </dependencyManagement>
 
     <dependencies>
-
+        <!--查看对象内存布局-->
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>0.9</version>
+        </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-jdbc-client</artifactId>
@@ -46,6 +51,10 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-config</artifactId>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -89,8 +98,12 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.72</version>
         </dependency>
-
-
+        <!--slf4j-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.30</version>
+        </dependency>
 
     </dependencies>
 
@@ -100,9 +113,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-<!--                    <release>11</release>-->
-                    <target>1.8</target>
-                    <source>1.8</source>
+                    <release>11</release>
                 </configuration>
             </plugin>
             <plugin>

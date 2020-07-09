@@ -2,29 +2,46 @@ package com.whj.vertx.verticle;
 
 import com.whj.vertx.util.MysqlUtils;
 import com.whj.vertx.util.ResponseUtils;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class FutureMysqlVerticle extends AbstractVerticle {
+    public static final InternalLogger log = Log4J2LoggerFactory.getInstance(FutureMysqlVerticle.class);
 
     private MysqlUtils mysqlUtils;
 
     public void start() {
+
         // Create the client pool
         mysqlUtils = new MysqlUtils(vertx);
+        MysqlUtils mysqlUtils = new MysqlUtils(vertx);
         //初始化router
         Router router = Router.router(vertx);
         //post获取body参数必须加入这一行
         router.route().handler(BodyHandler.create());
+        router.route().last().failureHandler(rct->{
+           rct.failure().printStackTrace();
+            JsonObject object = new JsonObject().put("code", 500).put("msg", "服务器异常请联系网站管理员");
+            rct.response()
+                    .putHeader("content-type", "application/json").end(object.toString());
+        });
         //get请求 getParam
         router.get("/user/get").handler(req -> {
             int pageSize = Integer.parseInt(req.request().getParam("pageSize"));
@@ -43,12 +60,15 @@ public class FutureMysqlVerticle extends AbstractVerticle {
             final int Begin = pageNo;
             final int Size = pageSize;
             // 第一部获取数据库连接
-            Future<SqlConnection> FutureSqlConn = mysqlUtils.getConn();
-            // 第一部执行查询
-            Future<RowSet<Row>> FutureRowSet = FutureSqlConn.compose(sqlConn -> this.getRowSet(sqlConn, sql, Begin, Size));
+            Future<SqlConnection> FutureSqlConn = this.mysqlUtils.getConn();
+            // 第二部执行查询
+            List<Object> params = new ArrayList<>();//查询参数list
+            params.add(Begin);
+            params.add(Size);
+            Future<RowSet<Row>> FutureRowSet = FutureSqlConn.compose(sqlConn -> this.mysqlUtils.getRowSet(sqlConn, sql, params));
             // 第三步获取查询结果并返回
             FutureRowSet.onSuccess(rowSet -> {
-                JsonArray objects = mysqlUtils.getResults(rowSet, 2);
+                JsonArray objects = this.mysqlUtils.getResults(rowSet, 2);
                 HttpServerResponse response = ResponseUtils.getJSONResponse(req);
                 response
                         .end(objects.toString());
@@ -66,18 +86,5 @@ public class FutureMysqlVerticle extends AbstractVerticle {
 
     }
 
-    private Future<RowSet<Row>> getRowSet(SqlConnection conn, String sql, int begin, int size) {
-        Promise<RowSet<Row>> promise = Promise.promise();
-        conn
-                .preparedQuery(sql)
-                .execute(Tuple.of(begin, size), ar2 -> {
-                    if (ar2.succeeded()) {
-                        promise.complete(ar2.result());
-                    } else {
-                        promise.fail(ar2.cause());
-                    }
-                });
-        return promise.future();
-    }
 
 }

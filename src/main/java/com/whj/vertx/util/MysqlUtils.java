@@ -1,5 +1,8 @@
 package com.whj.vertx.util;
 
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.Log4J2LoggerFactory;
+import io.vertx.config.ConfigRetriever;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -9,23 +12,38 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.List;
+
 
 public class MysqlUtils {
-
+    public static final InternalLogger logger = Log4J2LoggerFactory.getInstance(MysqlUtils.class);
     private MySQLPool mysqlClient;
 
     //获取mysql 连接池
     public MysqlUtils(Vertx vertx) {
-        MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-                .setPort(3307)
-                .setHost("47.100.57.24")
-                .setDatabase("test")
-                .setUser("root")
-                .setPassword("123456");
-        PoolOptions poolOptions = new PoolOptions()
-                .setMaxSize(5);
-        this.mysqlClient = MySQLPool.pool(vertx, connectOptions, poolOptions);
+        ConfigRetriever configRetriever = ConfigRetriever.create(vertx);
+        configRetriever.getConfig(ar -> {
+            JsonObject configJson = ar.result();
+            JsonObject mysqlConfig = configJson.getJsonObject("mysqlConfig");
+            MySQLConnectOptions connectOptions = new MySQLConnectOptions()
+                    .setPort(mysqlConfig.getInteger("port"))
+                    .setHost(mysqlConfig.getString("Host"))
+                    .setDatabase(mysqlConfig.getString("database"))
+                    .setUser(mysqlConfig.getString("user"))
+                    .setPassword(mysqlConfig.getString("password"));
+            PoolOptions poolOptions = new PoolOptions()
+                    .setMaxSize(5);
+            this.mysqlClient = MySQLPool.pool(vertx, connectOptions, poolOptions);
+        });
+
+
+    }
+
+    private Future<JsonObject> getConfigJson(Vertx vertx) {
+        Promise<JsonObject> promise = Promise.promise();
+
+        return promise.future();
     }
 
     //封装查询返回结果
@@ -74,16 +92,4 @@ public class MysqlUtils {
         });
         return promise.future();
     }
-
-    public static void main(String[] args) {
-        HashMap<Object, Object> map = new HashMap<>();
-        map.put("strog","123123");
-        map.put("sdf","435566");
-        map.put("sdfg","7788");
-        for (Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator(); iterator.hasNext();){
-            Map.Entry<Object, Object> next = iterator.next();
-            System.out.println(next.getKey()+"="+next.getValue());
-        }
-    }
-
 }

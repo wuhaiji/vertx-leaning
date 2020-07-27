@@ -12,7 +12,6 @@ import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
 
-import java.io.IOException;
 import java.util.List;
 
 
@@ -40,12 +39,6 @@ public class MysqlUtils {
 
     }
 
-    private Future<JsonObject> getConfigJson(Vertx vertx) {
-        Promise<JsonObject> promise = Promise.promise();
-
-        return promise.future();
-    }
-
     //封装查询返回结果
     public JsonArray getResults(RowSet<Row> result, Integer fieldNUmber) {
         JsonArray jsonArray = new JsonArray();
@@ -62,6 +55,7 @@ public class MysqlUtils {
         return jsonArray;
     }
 
+    //获取查询结果
     public Future<RowSet<Row>> getRowSet(SqlConnection conn, String sql, List<Object> params) {
         Promise<RowSet<Row>> promise = Promise.promise();
         Tuple tuple = Tuple.tuple();

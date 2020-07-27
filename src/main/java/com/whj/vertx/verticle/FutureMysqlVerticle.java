@@ -38,7 +38,7 @@ public class FutureMysqlVerticle extends AbstractVerticle {
         router.route().handler(BodyHandler.create());
         router.route().last().failureHandler(rct->{
            rct.failure().printStackTrace();
-            JsonObject object = new JsonObject().put("code", 500).put("msg", "服务器异常请联系网站管理员");
+            JsonObject object = new JsonObject().put("code", 500).put("msg", "服务器异常,请联系网站管理员");
             rct.response()
                     .putHeader("content-type", "application/json").end(object.toString());
         });
@@ -47,7 +47,6 @@ public class FutureMysqlVerticle extends AbstractVerticle {
             int pageSize = Integer.parseInt(req.request().getParam("pageSize"));
             int pageNo = Integer.parseInt(req.request().getParam("pageNo"));
             String sql = "SELECT user_id as userId, username FROM sys_user limit ?,?";
-
             if (pageSize <= 0) {
                 pageSize = 10;
             }
